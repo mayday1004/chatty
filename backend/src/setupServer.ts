@@ -8,12 +8,14 @@ import cookieSession from 'cookie-session';
 import { Server } from 'socket.io';
 import { createClient } from 'redis';
 import { createAdapter } from '@socket.io/redis-adapter';
+import Logger from 'bunyan';
 import 'express-async-errors';
 import { config } from '@root/config';
 import applicationRoutes from '@root/routes';
 import { CustomError, IErrorResponse } from '@global/helpers/errorHandler';
 
 const port = process.env.SERVER_PORT || 5000;
+const log: Logger = config.createLogger('server'); //辨識錯誤來自哪個檔案
 
 export class ChattyServer {
   private app: Application;
@@ -36,7 +38,7 @@ export class ChattyServer {
         name: 'session',
         keys: [config.COOKIE_SECRET_KEY_1!, config.COOKIE_SECRET_KEY_2!],
         maxAge: 24 * 7 * 3600000,
-        secure: config.NODE_ENV !== 'development',
+        secure: config.NODE_ENV !== 'development'
       })
     );
     app.use(hpp());
@@ -46,7 +48,7 @@ export class ChattyServer {
         origin: config.CLIENT_URL,
         credentials: true,
         optionsSuccessStatus: 200,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
       })
     );
   }
@@ -67,7 +69,7 @@ export class ChattyServer {
     });
 
     app.use((error: IErrorResponse, _req: Request, res: Response, next: NextFunction) => {
-      console.log(error);
+      log.error(error);
       if (error instanceof CustomError) {
         return res.status(error.statusCode).json(error.serializeErrors());
       }
@@ -82,7 +84,7 @@ export class ChattyServer {
       this.startHttpServer(httpServer);
       this.socketIOConnections(socketIO);
     } catch (error) {
-      console.log(error);
+      log.error(error);
     }
   }
 
@@ -90,8 +92,8 @@ export class ChattyServer {
     const io: Server = new Server(httpServer, {
       cors: {
         origin: config.CLIENT_URL,
-        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      },
+        methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+      }
     });
     const pubClient = createClient({ url: config.REDIS_HOST });
     const subClient = pubClient.duplicate();
@@ -101,10 +103,10 @@ export class ChattyServer {
   }
 
   private startHttpServer(httpServer: http.Server): void {
-    console.log(`Worker with process id of ${process.pid} has started...`);
-    console.log(`Server has started with process ${process.pid}`);
+    log.info(`Worker with process id of ${process.pid} has started...`);
+    log.info(`Server has started with process ${process.pid}`);
     httpServer.listen(port, () => {
-      console.log(`Server running on port ${port}`);
+      log.info(`Server running on port ${port}`);
     });
   }
 

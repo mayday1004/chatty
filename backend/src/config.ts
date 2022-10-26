@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import bunyan from 'bunyan';
 
 dotenv.config({ path: './src/.env' });
 
@@ -19,6 +20,10 @@ class Config {
     this.COOKIE_SECRET_KEY_2 = process.env.COOKIE_SECRET_KEY_2;
     this.CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
     this.REDIS_HOST = process.env.REDIS_HOST || 'redis://localhost:6379';
+  }
+
+  public createLogger(name: string): bunyan {
+    return bunyan.createLogger({ name, level: 'debug' });
   }
 
   //驗證環境變數是不是有undefined的，如果驗證過關才開始啟動我們的app
